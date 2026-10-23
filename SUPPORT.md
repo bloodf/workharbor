@@ -85,3 +85,12 @@ Include:
 6. A sanitized screenshot or short error excerpt, if needed.
 
 Avoid calendar exports, event titles or notes from real calendars, participant names, meeting links, credentials, local state files, and full machine-specific logs. Use the fictional demo for screenshots whenever possible.
+
+
+### Find Inspect copies and confirm the running build
+
+Open the menu-bar panel, choose Settings, and read **Version / Build** in General or the sidebar. Version 0.2.3 / build 15 shows **Inspect copies** as a separate button under every rule in **Calendar sync**. In Portuguese the button is **Diagnosticar cópias**; in Spanish it is **Diagnosticar copias**. A sync warning also has a button to open Calendar sync.
+
+If the expected button or full version/build is absent, quit the old instance from its own menu before opening the intended app. Do not delete the instance lock or local inventory to force a second instance.
+
+Inspection searches a finite, displayed date range. A direct ID can still identify a copy outside that range. A missing result is not proof of deletion or cancellation. Previews preserve unknown IDs; only separately confirmed exact, unique and safe matches can reconnect local tracking. Each reconnection preserves the original file bytes in a new private backup. A changed or unreadable inventory blocks further writes rather than replacing it with an empty file.

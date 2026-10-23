@@ -4,6 +4,16 @@ User-visible changes are recorded here. `Unreleased` describes the current devel
 
 ## [Unreleased]
 
+### 0.2.3 development preview (build 15)
+
+- Show the exact version and build from the running app bundle in General settings and the sidebar.
+- Give Inspect copies its own labeled button in each sync rule, with guidance and a shortcut from sync warnings.
+- Report duplicate markers and inconsistent unsafe observations even when the tracked ID still resolves.
+- Keep previews read-only for tracking identities. Reconnection requires a separate confirmed inspection and an exact-byte backup.
+- Block on a removed, unreadable, malformed or externally changed tracking inventory, and reject expired inspections after the fresh scan too.
+- Treat detached recurrence copies consistently as unsafe for reconnection, forwarding and writes.
+
+
 ### Added
 
 - Read-only, in-app copy-identity inspection with bounded date searches, and separately confirmed metadata-only reconnection for exact unique safe matches. Unknown copies remain blocked; local tracking backups are preserved.

@@ -38,25 +38,33 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             let folder=URL(fileURLWithPath:CommandLine.arguments[index+1],isDirectory:true)
             do {
                 try FileManager.default.createDirectory(at:folder,withIntermediateDirectories:true)
+                var sampleRule=MirrorRule();sampleRule.sourceID="demo-source";sampleRule.destinationID="demo-destination"
+                model.settings.rules=[sampleRule]
+                model.calendars=[CalendarInfo(id:"demo-source",name:"Personal · sample",writable:true),CalendarInfo(id:"demo-destination",name:"Destination · sample",writable:true)]
                 for language in ["en","pt-BR","es"] {
                     model.settings.language=language
                     for dark in [false,true] {
-                        let name="agenda-"+language+(dark ? "-dark" : "-light")+".png"
-                        let view=AgendaPopover(model:model,openSettings:{}).frame(width:380,height:620).environment(\.colorScheme,dark ? .dark : .light)
-                        let host=NSHostingView(rootView:view)
-                        host.frame=NSRect(x:0,y:0,width:380,height:620)
-                        let previewWindow=NSWindow(contentRect:host.frame,styleMask:[.borderless],backing:.buffered,defer:false)
-                        previewWindow.isReleasedWhenClosed=false
-                        previewWindow.appearance=NSAppearance(named:dark ? .darkAqua : .aqua)
-                        previewWindow.contentView=host
-                        host.layoutSubtreeIfNeeded()
-                        RunLoop.main.run(until:Date().addingTimeInterval(0.25))
-                        host.layoutSubtreeIfNeeded();host.displayIfNeeded()
-                        guard let bitmap=host.bitmapImageRepForCachingDisplay(in:host.bounds) else { throw HarborError.invalid("Preview bitmap unavailable") }
-                        host.cacheDisplay(in:host.bounds,to:bitmap)
-                        guard let data=bitmap.representation(using:.png,properties:[:]) else { throw HarborError.invalid("Preview PNG unavailable") }
-                        try data.write(to:folder.appendingPathComponent(name))
-                        previewWindow.close()
+                        for screen in ["agenda","general","sync"] {
+                            let width:CGFloat=screen == "agenda" ? 380 : 760
+                            let height:CGFloat=screen == "sync" ? 900 : 640
+                            let name=screen+"-"+language+(dark ? "-dark" : "-light")+".png"
+                            let content:AnyView=screen == "agenda" ? AnyView(AgendaPopover(model:model,openSettings:{})) : AnyView(ContentView(model:model,initialTab:screen,previewWithoutScrolling:true))
+                            let view=content.frame(width:width,height:height).environment(\.colorScheme,dark ? .dark : .light).background(Color(nsColor:.windowBackgroundColor))
+                            let host=NSHostingView(rootView:view)
+                            host.frame=NSRect(x:0,y:0,width:width,height:height)
+                            let previewWindow=NSWindow(contentRect:host.frame,styleMask:[.borderless],backing:.buffered,defer:false)
+                            previewWindow.isReleasedWhenClosed=false
+                            previewWindow.appearance=NSAppearance(named:dark ? .darkAqua : .aqua)
+                            previewWindow.contentView=host
+                            host.layoutSubtreeIfNeeded()
+                            RunLoop.main.run(until:Date().addingTimeInterval(0.25))
+                            host.layoutSubtreeIfNeeded();host.displayIfNeeded()
+                            guard let bitmap=host.bitmapImageRepForCachingDisplay(in:host.bounds) else { throw HarborError.invalid("Preview bitmap unavailable") }
+                            host.cacheDisplay(in:host.bounds,to:bitmap)
+                            guard let data=bitmap.representation(using:.png,properties:[:]) else { throw HarborError.invalid("Preview PNG unavailable") }
+                            try data.write(to:folder.appendingPathComponent(name))
+                            previewWindow.close()
+                        }
                     }
                 }
                 print("SYNTHETIC_PREVIEWS_OK")

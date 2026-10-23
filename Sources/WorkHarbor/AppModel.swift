@@ -2,6 +2,7 @@ import SwiftUI
 import HarborCore
 @MainActor
 final class AppModel:ObservableObject {
+    let appVersion=AppVersion(info:Bundle.main.infoDictionary ?? [:])
     let isSyntheticDemo=CommandLine.arguments.contains("--synthetic-demo")
     @Published var settings=AppSettings()
     @Published var calendars:[CalendarInfo]=[]
@@ -27,7 +28,7 @@ final class AppModel:ObservableObject {
     func t(_ key:String)->String { L10n.text(key,language:settings.language) }
     @discardableResult func save()->Bool {
         guard storageReady else { return false }
-        do { try persistence.save(settings);review=nil;status=t("saved");return true }
+        do { try persistence.save(settings);review=nil;copyInspection=nil;status=t("saved");return true }
         catch { self.error=error.localizedDescription;return false }
     }
     func refreshAgenda() {
@@ -94,6 +95,7 @@ final class AppModel:ObservableObject {
     }
     func invalidateReview() {
         if review?.demo == false { review = nil }
+        copyInspection = nil
         status = "O Mac despertou ou o calendário mudou. Rotas automáticas autorizadas serão verificadas."
         refreshAgenda(); scheduleAutomaticSync()
     }

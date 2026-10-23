@@ -9,6 +9,11 @@ enum L10n {
         return strings[key]?[index] ?? diagnostics[key]?[index] ?? key
     }
     static let strings:[String:[String]]=[
+        "version":["Version","Versão","Versión"],
+        "build":["Build","Build","Build"],
+        "openSync":["Open calendar sync","Abrir sincronização de agendas","Abrir sincronización de calendarios"],
+        "inspectionLocation":["Inspect copies is available in each sync rule below.","Diagnosticar cópias está disponível em cada regra abaixo.","Diagnosticar copias está disponible en cada regla de abajo."],
+        "inspectionHelp":["Find tracked copies using IDs and exact markers. Read-only until you separately confirm reconnection.","Localize cópias rastreadas por IDs e marcadores exatos. Somente leitura até confirmar a reconexão separadamente.","Localiza copias registradas por IDs y marcadores exactos. Solo lectura hasta confirmar la reconexión por separado."],
         "inspectCopies":["Inspect copies","Diagnosticar cópias","Diagnosticar copias"],
         "inspectionReadOnly":["Read-only inspection of identifiers and markers. No calendar events or tracking data changed.","Inspeção somente leitura de IDs e marcadores. Nenhum evento ou dado de rastreamento alterado.","Inspección de solo lectura de IDs y marcadores. No se modificaron eventos ni datos de seguimiento."],
         "identity_located":["Located by ID","Localizadas pelo ID","Localizadas por ID"],

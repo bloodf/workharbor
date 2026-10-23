@@ -3,7 +3,13 @@ import HarborCore
 struct ContentView:View {
     @State private var confirmReconnect=false
     @ObservedObject var model:AppModel
-    @State private var tab="general"
+    @State private var tab:String
+    private let previewWithoutScrolling:Bool
+    init(model:AppModel,initialTab:String="general",previewWithoutScrolling:Bool=false) {
+        _model=ObservedObject(wrappedValue:model)
+        _tab=State(initialValue:initialTab)
+        self.previewWithoutScrolling=previewWithoutScrolling
+    }
     @State private var selectedCleanupIDs:Set<String>=[]
     @State private var includeDeletions=false
     @State private var confirmApply=false
@@ -17,18 +23,14 @@ struct ContentView:View {
                 Text(model.t("tagline")).font(.caption).foregroundStyle(.secondary).padding(.bottom,24)
                 nav("general","slider.horizontal.3");nav("agenda","calendar");nav("sync","arrow.triangle.2.circlepath")
                 Spacer()
-                Text("0.2 · "+model.t("edition")).font(.caption2).foregroundStyle(.tertiary)
+                Text(model.t("version")+" "+model.appVersion.version+" · "+model.t("build")+" "+model.appVersion.build)
+                    .font(.caption2).foregroundStyle(.secondary).textSelection(.enabled)
+                Text(model.t("edition")).font(.caption2).foregroundStyle(.tertiary)
             }.padding(20).frame(width:190).frame(maxHeight:.infinity).background(.thinMaterial)
             Divider()
-            ScrollView {
-                VStack(alignment:.leading,spacing:22) {
-                    Text(model.t(tab)).font(.system(size:27,weight:.bold,design:.rounded))
-                    if tab == "general" { general }
-                    else if tab == "agenda" { agenda }
-                    else { sync }
-                    if let issue=model.automaticSyncIssue { Label(model.t("attention"),systemImage:"exclamationmark.triangle.fill").foregroundStyle(.orange);Text(issue.split(separator:"\n").map{model.t(String($0))}.joined(separator:"\n")).font(.caption).textSelection(.enabled) }
-                    if !model.status.isEmpty { Text(model.t(model.status)).font(.caption).foregroundStyle(.secondary).textSelection(.enabled) }
-                }.padding(28).frame(maxWidth:.infinity,alignment:.leading)
+            Group {
+                if previewWithoutScrolling { settingsContent.frame(maxHeight:.infinity,alignment:.top) }
+                else { ScrollView { settingsContent } }
             }
         }.tint(.teal).environment(\.locale,L10n.locale(model.settings.language))
         .onChange(of:model.review?.id) { _,_ in selectedCleanupIDs=[];includeDeletions=false }
@@ -48,11 +50,23 @@ struct ContentView:View {
             Button(model.t("cancel"),role:.cancel) { automaticRule=nil }
         } message:{Text(model.t("autoInfo"))}
     }
+    private var settingsContent:some View {
+                VStack(alignment:.leading,spacing:22) {
+                    Text(model.t(tab)).font(.system(size:27,weight:.bold,design:.rounded))
+                    if tab == "general" { general }
+                    else if tab == "agenda" { agenda }
+                    else { sync }
+                    if let issue=model.automaticSyncIssue { Button(model.t("openSync")) { tab="sync" }.buttonStyle(.bordered);Label(model.t("attention"),systemImage:"exclamationmark.triangle.fill").foregroundStyle(.orange);Text(issue.split(separator:"\n").map{model.t(String($0))}.joined(separator:"\n")).font(.caption).textSelection(.enabled) }
+                    if !model.status.isEmpty { Text(model.t(model.status)).font(.caption).foregroundStyle(.secondary).textSelection(.enabled) }
+                }.padding(28).frame(maxWidth:.infinity,alignment:.leading)
+    }
     private func nav(_ key:String,_ icon:String)->some View {
         Button { tab=key } label:{Label(model.t(key),systemImage:icon).frame(maxWidth:.infinity,alignment:.leading).padding(10).background(tab == key ? Color.teal.opacity(0.13) : Color.clear,in:RoundedRectangle(cornerRadius:9))}.buttonStyle(.plain)
     }
     private var general:some View {
         VStack(alignment:.leading,spacing:20) {
+            Text(model.t("version")+" "+model.appVersion.version+" · "+model.t("build")+" "+model.appVersion.build)
+                .font(.headline).textSelection(.enabled)
             Text(model.t("privacy")).foregroundStyle(.secondary)
             Picker(model.t("language"),selection:$model.settings.language) { Text(model.t("system")).tag("system");Text("English").tag("en");Text("Português (Brasil)").tag("pt-BR");Text("Español").tag("es") }.onChange(of:model.settings.language) { _,_ in model.save() }
             Divider()
@@ -77,6 +91,7 @@ struct ContentView:View {
     private var sync:some View {
         VStack(alignment:.leading,spacing:18) {
             Text(model.t("autoInfo")).font(.caption).foregroundStyle(.secondary)
+            Text(model.t("inspectionLocation")).font(.callout).foregroundStyle(.secondary)
             ForEach($model.settings.rules) { $rule in
                 VStack(alignment:.leading,spacing:12) {
                     HStack {Image(systemName:"arrow.triangle.2.circlepath").foregroundStyle(.teal);Text(model.t("route")).font(.headline);Spacer();Text(model.t(AutomaticSyncPolicy.isAuthorized(rule) ? "automatic" : "reviewOnly")).font(.caption).foregroundStyle(.secondary)}
@@ -85,7 +100,10 @@ struct ContentView:View {
                     Picker(model.t("mode"),selection:$rule.mode) {Text(model.t("busy")).tag(MirrorMode.busy);Text(model.t("details")).tag(MirrorMode.details)}.pickerStyle(.segmented)
                     if rule.mode == .busy { HStack {Stepper("\(model.t("before")): \(rule.beforeMinutes)",value:$rule.beforeMinutes,in:0...240,step:5);Stepper("\(model.t("after")): \(rule.afterMinutes)",value:$rule.afterMinutes,in:0...240,step:5)}.font(.caption) }
                     Toggle(model.t("automatic"),isOn:Binding(get:{AutomaticSyncPolicy.isAuthorized(rule)},set:{enabled in if enabled {automaticRule=rule} else {model.setAutomatic(false,for:rule)}}))
-                    HStack {Button(model.t("review")) {model.preview(rule)};Button(model.t("cleanup")) {model.previewCleanup(rule)};Button(model.t("inspectCopies")) {model.inspectCopies(rule)};Spacer();Button {removingRule=rule} label:{Image(systemName:"trash")}.help(model.t("removeRule"))}.controlSize(.small)
+                    HStack {Button(model.t("review")) {model.preview(rule)};Button(model.t("cleanup")) {model.previewCleanup(rule)};Spacer();Button {removingRule=rule} label:{Image(systemName:"trash")}.help(model.t("removeRule"))}.controlSize(.small)
+                    Button { model.inspectCopies(rule) } label: { Label(model.t("inspectCopies"),systemImage:"stethoscope") }
+                        .buttonStyle(.bordered).help(model.t("inspectionHelp"))
+                    Text(model.t("inspectionHelp")).font(.caption).foregroundStyle(.secondary)
                 }.padding(16).background(Color.primary.opacity(0.035),in:RoundedRectangle(cornerRadius:14))
             }
             HStack {Button {model.settings.rules.append(MirrorRule())} label:{Label(model.t("add"),systemImage:"plus")};Spacer();Button(model.t("save")) {model.save()}.buttonStyle(.borderedProminent).disabled(!model.storageReady)}

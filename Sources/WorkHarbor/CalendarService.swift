@@ -39,6 +39,7 @@ final class CalendarService {
     private let pendingWriteURL: URL
     private var inventory: [String: String] = [:] // copy marker -> local event ID, no event content
     private var inventoryError = false
+    private var inventoryFileRequired = false
     private var routeGraph: [MirrorRule] = []
     func configureRoutes(_ routes: [MirrorRule]) { routeGraph = routes }
     var fullAccess: Bool { EKEventStore.authorizationStatus(for: .event) == .fullAccess }
@@ -47,6 +48,7 @@ final class CalendarService {
         pendingWriteURL = directory.appendingPathComponent("pending-write.json")
         network.start(queue: DispatchQueue(label: "local.workharbor.reachability"))
         if FileManager.default.fileExists(atPath: inventoryURL.path) {
+            inventoryFileRequired = true
             do { inventory = try JSONDecoder().decode([String: String].self, from: Data(contentsOf: inventoryURL)) }
             catch { inventoryError = true }
         }
@@ -77,8 +79,17 @@ final class CalendarService {
         EventValue(title: event.title ?? "Sem título", start: event.startDate, end: event.endDate, allDay: event.isAllDay,
                    timeZone: event.timeZone?.identifier, notes: event.notes, location: event.location)
     }
-    private func snapshot(rule: MirrorRule, installation: UUID, interval: DateInterval) throws -> SyncSnapshot {
+    private func verifiedInventoryBytes() throws -> Data? {
         guard !inventoryError else { throw HarborError.invalid("Inventário de cópias ilegível. Escrita bloqueada; preserve copies.json para recuperação.") }
+        do { return try CopyInventoryFile(file: inventoryURL).validatedBytes(expected: inventory, mustExist: inventoryFileRequired) }
+        catch { inventoryError = true; throw error }
+    }
+    private func unsafeCopy(_ event: EKEvent) -> Bool {
+        CopyIdentitySafety.isUnsafe(hasAttendees: event.hasAttendees, organizerPresent: event.organizer != nil,
+                                    hasRecurrenceRules: event.hasRecurrenceRules, isDetached: event.isDetached)
+    }
+    private func snapshot(rule: MirrorRule, installation: UUID, interval: DateInterval) throws -> SyncSnapshot {
+        _ = try verifiedInventoryBytes()
         try Reconciler.validate([rule], calendars: calendars())
         guard let source = store.calendar(withIdentifier: rule.sourceID), let destination = store.calendar(withIdentifier: rule.destinationID) else {
             throw HarborError.invalid("Calendário removido. Escolha novamente origem e destino.")
@@ -100,7 +111,7 @@ final class CalendarService {
             }
             let marker = event.url?.scheme == "workharbor" ? event.url?.absoluteString : nil
             let upstream = routeGraph.first { $0.destinationID == rule.sourceID && $0.mode == .details && marker?.hasPrefix(Reconciler.prefix(installation: installation, rule: $0)) == true }
-            let canForward = marker.map { inventory[$0] == event.eventIdentifier } == true && upstream != nil && !event.hasAttendees && event.organizer == nil && !event.hasRecurrenceRules
+            let canForward = marker.map { inventory[$0] == event.eventIdentifier } == true && upstream != nil && !unsafeCopy(event)
             let key = canForward ? marker! : OccurrenceIdentity.key(itemID: itemID, occurrence: anchor, allDay: event.isAllDay)
             var payload = value(event)
             if let url = event.url, url.scheme != "workharbor" {
@@ -114,31 +125,18 @@ final class CalendarService {
         var byID: [String: EKEvent] = [:]
         for event in candidates { if let id = event.eventIdentifier { byID[id] = event } }
         var unlocated: [String] = []
-        var recoveredInventory = inventory
-        let recoveryCandidates = candidates.compactMap { event -> OwnedEvent? in
-            guard event.calendar.calendarIdentifier == rule.destinationID, let id = event.eventIdentifier, let marker = event.url?.absoluteString else { return nil }
-            return OwnedEvent(id: id, marker: marker, value: value(event), hasParticipants: event.hasAttendees || event.organizer != nil || event.hasRecurrenceRules)
-        }
         for (marker, id) in inventory where marker.hasPrefix(prefix) {
             if let event = store.event(withIdentifier: id) {
                 try TrackedCopyGuard.validate(expectedMarker: marker, actualMarker: event.url?.absoluteString,
                                               expectedCalendar: rule.destinationID, actualCalendar: event.calendar.calendarIdentifier)
                 byID[id] = event
-            } else if let replacement = try TrackedCopyRecovery.replacement(marker: marker, candidates: recoveryCandidates) {
-                recoveredInventory[marker] = replacement
             } else { unlocated.append(id) }
         }
-        if recoveredInventory != inventory {
-            // Rebind only previously tracked, exact, unique markers. Never clear an uncertain write journal.
-            do {
-                try JSONEncoder().encode(recoveredInventory).write(to: inventoryURL, options: .atomic)
-                try FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: inventoryURL.path)
-                inventory = recoveredInventory
-            } catch { inventoryError = true; throw HarborError.invalid("Não foi possível salvar a identidade recuperada. Escritas continuam bloqueadas.") }
-        }
+        // A preview never reconnects local IDs. Exact matches require the
+        // explicit inspection confirmation and a preserved inventory backup.
         let copies = byID.values.compactMap { event -> OwnedEvent? in
             guard let marker = event.url?.absoluteString, marker.hasPrefix(prefix), let id = event.eventIdentifier else { return nil }
-            return OwnedEvent(id: id, marker: marker, value: value(event), hasParticipants: event.hasAttendees || event.organizer != nil || event.hasRecurrenceRules)
+            return OwnedEvent(id: id, marker: marker, value: value(event), hasParticipants: unsafeCopy(event))
         }.sorted { $0.id < $1.id }
         guard fullAccess else { throw HarborError.invalid("Permissão revogada durante a leitura.") }
         return SyncSnapshot(sources: sources.sorted { $0.key < $1.key }, copies: copies, unlocatedTrackedIDs: unlocated, preferredCopyIDs:inventory.filter { $0.key.hasPrefix(prefix) })
@@ -146,63 +144,51 @@ final class CalendarService {
     /// Pure metadata audit: never calls snapshot, saves an event, or rebinds inventory.
     func inspectCopies(rule:MirrorRule,installation:UUID,interval supplied:DateInterval? = nil) throws -> CopyInspectionReport {
         guard fullAccess, !inventoryError else {throw HarborError.invalid("Calendar access or readable inventory is required.")}
+        _ = try verifiedInventoryBytes()
         guard let destination=store.calendar(withIdentifier:rule.destinationID) else {throw HarborError.invalid("Destination calendar is unavailable.")}
         let now=Date(), cal=Calendar(identifier:.gregorian)
         let interval=supplied ?? DateInterval(start:cal.date(byAdding:.year,value:-2,to:now)!,end:cal.date(byAdding:.year,value:2,to:now)!)
-        guard interval.duration > 0, interval.duration < 1465*86400 else {throw HarborError.invalid("Invalid diagnostic date window.")}
+        let chunks = try IdentityInspection.chunks(in: interval, calendar: cal)
         let prefix=Reconciler.prefix(installation:installation,rule:rule)
         let expected=inventory.filter {$0.key.hasPrefix(prefix)}
         func observe(_ event:EKEvent)->CopyIdentityObservation? {
             guard let id=event.eventIdentifier else {return nil}
             return CopyIdentityObservation(id:id,marker:event.url?.absoluteString,calendarID:event.calendar.calendarIdentifier,
-                                           unsafe:event.hasAttendees || event.organizer != nil || event.hasRecurrenceRules || event.isDetached)
+                                           unsafe:unsafeCopy(event))
         }
         var direct:[String:CopyIdentityObservation]=[:]
         for id in expected.values {
             if let event=store.event(withIdentifier:id),let observation=observe(event) {direct[id]=observation}
         }
         // EventKit silently truncates queries longer than four years. Use <=1-year chunks.
-        var searched:[CopyIdentityObservation]=[], cursor=interval.start
-        while cursor < interval.end {
-            let end=min(cal.date(byAdding:.year,value:1,to:cursor)!,interval.end)
-            for event in store.events(matching:store.predicateForEvents(withStart:cursor,end:end,calendars:[destination])) {
+        var searched:[CopyIdentityObservation]=[]
+        for chunk in chunks {
+            for event in store.events(matching:store.predicateForEvents(withStart:chunk.start,end:chunk.end,calendars:[destination])) {
                 if let marker=event.url?.absoluteString, expected[marker] != nil, let observation=observe(event) {searched.append(observation)}
             }
-            cursor=end
         }
+        _ = try verifiedInventoryBytes()
         guard fullAccess else {throw HarborError.invalid("Calendar permission changed during inspection.")}
         return CopyInspectionReport(rule:rule,installation:installation,interval:interval,inventory:inventory,
             findings:IdentityInspection.inspect(expected:expected,destinationID:rule.destinationID,direct:direct,searched:searched))
     }
     func reconnectCopies(_ report:CopyInspectionReport,confirmed:Bool) throws -> Int {
-        guard confirmed, inventory == report.inventory, Date().timeIntervalSince(report.createdAt) < 300,
-              Date() >= report.createdAt, !inventoryError else {throw HarborError.invalid("Inspection expired or inventory changed. Inspect again.")}
+        guard confirmed, inventory == report.inventory, !inventoryError else {throw HarborError.invalid("Inspection expired or inventory changed. Inspect again.")}
+        try IdentityInspection.validateReview(createdAt: report.createdAt, now: Date())
         guard !FileManager.default.fileExists(atPath:pendingWriteURL.path) else {throw HarborError.invalid("A pending write must be reconciled before identity recovery.")}
-        func readDiskInventory() throws -> (Data,[String:String]) {
-            do {
-                let data=try Data(contentsOf:inventoryURL)
-                return (data,try JSONDecoder().decode([String:String].self,from:data))
-            } catch {inventoryError=true;throw error}
-        }
-        let (originalBytes,diskInventory)=try readDiskInventory()
-        guard diskInventory == inventory, diskInventory == report.inventory else {
-            inventoryError=true
-            throw HarborError.invalid("Tracking data changed on disk. Writes are blocked; restart and inspect again.")
-        }
+        guard let originalBytes = try verifiedInventoryBytes() else { throw HarborError.invalid("Inspection expired or inventory changed. Inspect again.") }
         let fresh=try inspectCopies(rule:report.rule,installation:report.installation,interval:report.interval)
-        guard try readDiskInventory().0 == originalBytes else {
+        guard try verifiedInventoryBytes() == originalBytes else {
             inventoryError=true
             throw HarborError.invalid("Tracking data changed during inspection. No recovery was saved.")
         }
+        try IdentityInspection.validateReview(createdAt: report.createdAt, now: Date())
         let repaired=try IdentityInspection.repairedInventory(original:inventory,reviewed:report.findings,current:fresh.findings,
                                                             selected:report.repairable,confirmed:confirmed)
-        let backup=inventoryURL.deletingLastPathComponent().appendingPathComponent("copies-before-reconnect-"+UUID().uuidString+".json")
         do {
-            try originalBytes.write(to:backup,options:.atomic)
-            try FileManager.default.setAttributes([.posixPermissions:0o600],ofItemAtPath:backup.path)
-            try JSONEncoder().encode(repaired).write(to:inventoryURL,options:.atomic)
-            try FileManager.default.setAttributes([.posixPermissions:0o600],ofItemAtPath:inventoryURL.path)
+            try CopyInventoryFile(file: inventoryURL).reconnect(expectedBytes: originalBytes, repaired: repaired)
             inventory=repaired
+            inventoryFileRequired=true
         } catch {inventoryError=true;throw HarborError.invalid("Could not save recovered identities. Writes remain blocked; backup and original data were preserved where possible.")}
         return report.repairable.count
     }
@@ -253,6 +239,7 @@ final class CalendarService {
         // not be retried by the timer against a temporarily empty local snapshot.
         let intent = PendingWriteIntent(ruleID: review.rule.id, destinationID: review.rule.destinationID,
                                         markers: selected.map(\.marker), existingIDs: selected.compactMap(\.existingID))
+        _ = try verifiedInventoryBytes()
         try PendingWriteJournal(file: pendingWriteURL).begin(intent)
         var saved: [(String, EKEvent)] = []
         var deleted: [(marker: String, id: String)] = []
@@ -261,8 +248,7 @@ final class CalendarService {
                 let event: EKEvent
                 if let id = change.existingID {
                     guard let existing = store.event(withIdentifier: id), existing.calendar.calendarIdentifier == review.rule.destinationID,
-                          existing.url?.absoluteString == change.marker, !existing.hasAttendees, existing.organizer == nil,
-                          !existing.hasRecurrenceRules else { throw HarborError.invalid("A cópia mudou ou contém participantes. Gravação cancelada.") }
+                          existing.url?.absoluteString == change.marker, !unsafeCopy(existing) else { throw HarborError.invalid("A cópia mudou ou contém participantes. Gravação cancelada.") }
                     event = existing
                 } else {
                     event = EKEvent(eventStore: store)
@@ -291,11 +277,14 @@ final class CalendarService {
         let savedIDs=Dictionary(grouping:saved.compactMap { marker,event -> (String,String)? in
             guard let id=event.eventIdentifier else { return nil }; return (marker,id)
         },by: { $0.0 }).mapValues { $0.map { $0.1 } }
-        inventory=CopyInventory.reconcile(existing:inventory,saved:savedIDs,copies:fresh.copies,deletedIDs:Set(deleted.map(\.id)))
+        let updatedInventory=CopyInventory.reconcile(existing:inventory,saved:savedIDs,copies:fresh.copies,deletedIDs:Set(deleted.map(\.id)))
         do {
+            _ = try verifiedInventoryBytes()
             try FileManager.default.createDirectory(at: inventoryURL.deletingLastPathComponent(), withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])
-            try JSONEncoder().encode(inventory).write(to: inventoryURL, options: .atomic)
+            try JSONEncoder().encode(updatedInventory).write(to: inventoryURL, options: .atomic)
             try FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: inventoryURL.path)
+            inventory=updatedInventory
+            inventoryFileRequired=true
         } catch {
             inventoryError = true
             throw HarborError.invalid("EventKit confirmou gravação local, mas o inventário não foi salvo. Pare e preserve os dados antes de repetir.")
