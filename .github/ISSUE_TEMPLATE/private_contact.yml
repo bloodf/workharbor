@@ -1,0 +1,27 @@
+name: Private contact request
+description: Request a private channel without publishing sensitive details.
+title: "Private contact request"
+body:
+  - type: markdown
+    attributes:
+      value: |
+        This issue will be PUBLIC. Use it only to request a private reporting channel.
+        Do not describe a vulnerability or conduct incident here. Do not include names, allegations, exploit steps, personal data, or evidence.
+        For a security report, first check whether GitHub offers “Report a vulnerability” on the repository's Security advisories page.
+        See [SECURITY.md](https://github.com/bloodf/workharbor/blob/main/SECURITY.md) and [CODE_OF_CONDUCT.md](https://github.com/bloodf/workharbor/blob/main/CODE_OF_CONDUCT.md).
+  - type: dropdown
+    id: topic
+    attributes:
+      label: Requested channel
+      options:
+        - Security report
+        - Code of conduct concern
+    validations:
+      required: true
+  - type: checkboxes
+    id: acknowledgement
+    attributes:
+      label: Public request only
+      options:
+        - label: I am requesting a private contact method and will wait for it before sharing sensitive details.
+          required: true

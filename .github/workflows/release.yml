@@ -1,0 +1,59 @@
+name: Package preview release
+on:
+  push:
+    tags: ['v[0-9]*']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  package:
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: macos-15
+    timeout-minutes: 30
+    permissions:
+      contents: write
+    env:
+      RELEASE_TAG: ${{ github.ref_name }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Validate release version
+        shell: bash
+        run: |
+          [[ "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || exit 1
+          VERSION=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' Resources/Info.plist)
+          [[ "$RELEASE_TAG" == "v$VERSION" ]] || { echo 'Tag must match Info.plist version'; exit 1; }
+      - name: Test
+        run: ./scripts/test.sh
+      - name: Build
+        run: ./scripts/build-app.sh
+      - name: Install DMG packager
+        run: brew install create-dmg
+      - name: Package customized DMG
+        run: ./scripts/package-dmg.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: WorkHarbor-DMG
+          path: |
+            dist/*.dmg
+            dist/*.sha256
+          if-no-files-found: error
+      - name: Publish preview
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          cat > "$RUNNER_TEMP/release-notes.md" <<'NOTES'
+          WorkHarbor development preview for macOS 14+.
+
+          Download the DMG matching your Mac architecture and drag WorkHarbor into Applications. Quit any previous version first. The filename identifies the actual build architecture.
+
+          This preview is ad-hoc signed, NOT Developer ID signed or notarized by Apple. macOS may block opening it. No security settings are disabled by the installer. Build from source if you do not wish to use this preview.
+
+          Automated tests do not guarantee compatibility with every calendar provider. Review calendar changes before enabling automatic synchronization. Back up your calendars independently.
+          NOTES
+          gh release create "$RELEASE_TAG" dist/*.dmg dist/*.sha256 --verify-tag --prerelease --title "WorkHarbor $RELEASE_TAG — preview" --notes-file "$RUNNER_TEMP/release-notes.md"

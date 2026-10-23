@@ -96,6 +96,10 @@ struct ContentView:View {
             Divider();Text(model.t("preview")).font(.title3.bold())
             Text(model.calendars.first(where:{$0.id==review.rule.destinationID})?.name ?? review.rule.destinationID).font(.caption).foregroundStyle(.secondary)
             if review.cleanupOnly {Text(model.t("cleanupInfo")).font(.caption).foregroundStyle(.orange)}
+            if !review.snapshot.unlocatedTrackedIDs.isEmpty {
+                Text(model.t("missingIdentityBlock")+" ("+String(review.snapshot.unlocatedTrackedIDs.count)+")")
+                    .font(.callout).foregroundStyle(.orange)
+            }
             if review.changes.isEmpty {Text(model.t("noChanges"))}
             ForEach(review.changes) { change in
                 VStack(alignment:.leading,spacing:6) {
@@ -106,7 +110,7 @@ struct ContentView:View {
                 }.padding(12).frame(maxWidth:.infinity,alignment:.leading).background(Color.primary.opacity(0.035),in:RoundedRectangle(cornerRadius:10))
             }
             if !review.cleanupOnly {Toggle(model.t("includeDelete"),isOn:$includeDeletions)}
-            Button(model.t("confirm")) {confirmApply=true}.disabled(review.demo || !model.storageReady || review.changes.isEmpty || (review.cleanupOnly && selectedCleanupIDs.isEmpty)).buttonStyle(.borderedProminent)
+            Button(model.t("confirm")) {confirmApply=true}.disabled(review.demo || !review.snapshot.unlocatedTrackedIDs.isEmpty || !model.storageReady || review.changes.isEmpty || (review.cleanupOnly && selectedCleanupIDs.isEmpty)).buttonStyle(.borderedProminent)
         }
     }
     private func eventLine(_ value:EventValue,label:String)->some View {

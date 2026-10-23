@@ -9,6 +9,9 @@ enum L10n {
         return strings[key]?[index] ?? diagnostics[key]?[index] ?? key
     }
     static let strings:[String:[String]]=[
+        "missingIdentityBlock":["Tracked copies could not be located. All writes are blocked until identities are reconciled.","Cópias rastreadas não localizadas. Todas as gravações estão bloqueadas até reconciliar as identidades.","No se localizaron copias registradas. Todas las escrituras están bloqueadas hasta reconciliar las identidades."],
+        "missingIDs":["Missing copy identities","Identidades de cópia não localizadas","Identidades de copia no localizadas"],
+        "unmatchedSources":["Located copies without a source in this window","Cópias localizadas sem origem nesta janela","Copias localizadas sin origen en esta ventana"],
         "tagline":["Your calendars. In harmony.","Suas agendas. Em sintonia.","Tus calendarios. En armonía."],
         "upcoming":["Coming up","Próximos eventos","Próximos eventos"],
         "today":["Today","Hoje","Hoy"],"tomorrow":["Tomorrow","Amanhã","Mañana"],
@@ -52,6 +55,7 @@ enum L10n {
         "demo":["Preview · sample events","Prévia · eventos fictícios","Vista previa · eventos de ejemplo"]
     ]
     static let diagnostics:[String:[String]]=[
+        "Cópias rastreadas não localizadas. Gravação manual e automática bloqueada até reconciliar as identidades.":["Tracked copies could not be located. Manual and automatic writes are blocked until identities are reconciled.","Cópias rastreadas não localizadas. Gravação manual e automática bloqueada até reconciliar as identidades.","No se localizaron copias registradas. Escritura manual y automática bloqueada hasta reconciliar las identidades."],
         "Esta rota não possui autorização automática válida.":["This route has no valid automatic sync authorization.", "Esta rota não possui autorização automática válida.", "Esta ruta no tiene una autorización válida para la sincronización automática."],
         "Há cópias rastreadas não localizadas. Sincronização automática suspensa para evitar duplicatas.":["Some tracked copies could not be located. Automatic sync is suspended to prevent duplicates.", "Há cópias rastreadas não localizadas. Sincronização automática suspensa para evitar duplicatas.", "No se han podido localizar algunas copias rastreadas. La sincronización automática está suspendida para evitar duplicados."],
         "Há identidades não localizadas. Limpeza bloqueada até revisão.":["Some identities could not be located. Cleanup is blocked pending review.", "Há identidades não localizadas. Limpeza bloqueada até revisão.", "No se han podido localizar algunas identidades. La limpieza está bloqueada hasta que se revisen."],

@@ -124,7 +124,8 @@ final class AppModel:ObservableObject {
             try Reconciler.validate(settings.rules, calendars: calendar.calendars())
             try persistence.save(settings)
             var changed = 0
-            var unresolved = 0
+            var missingIDs = 0
+            var unmatchedSources = 0
             calendar.configureRoutes(settings.rules)
             var issues: [String] = []
             var blockedCalendars: Set<String> = []
@@ -132,12 +133,13 @@ final class AppModel:ObservableObject {
                 if blockedCalendars.contains(rule.sourceID) { blockedCalendars.insert(rule.destinationID); continue }
                 do {
                     let candidate = try calendar.preview(rule: rule, installation: settings.installationID)
-                    unresolved += candidate.unresolvedCopies.count + candidate.snapshot.unlocatedTrackedIDs.count
+                    missingIDs += candidate.snapshot.unlocatedTrackedIDs.count
+                    unmatchedSources += candidate.unresolvedCopies.count
                     changed += try calendar.apply(candidate, confirmed: true, includeDeletions: false, automatic: true)
                 } catch { issues.append(error.localizedDescription); blockedCalendars.insert(rule.destinationID) }
             }
             automaticSyncIssue = issues.isEmpty ? nil : Array(Set(issues)).sorted().joined(separator: "\n")
-            status = t("syncCount")+": "+String(changed)+" · "+t("pendingCount")+": "+String(unresolved)
+            status = t("syncCount")+": "+String(changed)+" · "+t("missingIDs")+": "+String(missingIDs)+" · "+t("unmatchedSources")+": "+String(unmatchedSources)
         } catch {
             automaticSyncIssue = error.localizedDescription
             status = "Calendários: há uma pendência. Consulte o painel; nenhuma duplicata será criada para contornar o bloqueio."

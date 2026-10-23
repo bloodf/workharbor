@@ -7,6 +7,11 @@ public enum ReviewGuard {
         guard networkAvailable else { throw HarborError.invalid("Sem rede disponível. A prévia pode ser consultada, mas a gravação fica bloqueada até reconectar e revisar novamente.") }
         guard fullAccess else { throw HarborError.invalid("Permissão revogada. Nenhuma gravação autorizada.") }
         guard now >= createdAt, now.timeIntervalSince(createdAt) < 300 else { throw HarborError.invalid("Prévia expirada. Gere uma nova revisão.") }
+        // Missing local IDs are not proof of deletion. This guard applies to
+        // manual reviews too, before any EventKit mutation or pending-write intent.
+        guard reviewed.unlocatedTrackedIDs.isEmpty, current.unlocatedTrackedIDs.isEmpty else {
+            throw HarborError.invalid("Cópias rastreadas não localizadas. Gravação manual e automática bloqueada até reconciliar as identidades.")
+        }
         guard reviewed.complete, current.complete, reviewed == current else { throw HarborError.invalid("Calendário mudou desde a prévia. Revise novamente.") }
     }
 }

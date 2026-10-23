@@ -1,73 +1,98 @@
 <p align="center"><img src="docs/images/banner.png" alt="WorkHarbor — Your calendars. In harmony." /></p>
 
-<p align="center"><a href="README.md">English</a> · <a href="docs/README.pt-BR.md">Português</a> · <a href="docs/README.es.md">Español</a></p>
+<p align="center"><a href="README.md">English</a> · <a href="docs/README.pt-BR.md">Português (Brasil)</a> · <a href="docs/README.es.md">Español</a></p>
 
-# WorkHarbor
+<p align="center">macOS 14+ · Native SwiftUI · Apple EventKit · MIT licensed</p>
 
-A quiet home for your calendars, right in the macOS menu bar.
+# Your day, in view. Your calendars, in sync.
 
-WorkHarbor shows upcoming events and creates controlled copies between calendars already configured in Apple Calendar. No inboxes, embedded browsers, AI accounts, or separate calendar passwords.
+WorkHarbor brings your upcoming events to the macOS menu bar and helps your calendars work together. See what is next, keep separate schedules visible, and block personal time on a work calendar without sharing the details.
 
-> **Development preview.** This is not a notarized production release. Synthetic tests do not establish reliability with every calendar provider. Review changes before enabling automatic synchronization.
+Built for people whose day does not fit in a single calendar. No new calendar account. No extra calendar passwords. Just the calendars already on your Mac.
 
-## A glance at the menu
+**[Get started](#get-started)** · **[How synchronization works](docs/synchronization.md)** · **[Contribute](CONTRIBUTING.md)**
 
-<p align="center"><img src="docs/images/agenda-en-light.png" width="320" alt="WorkHarbor light" /> <img src="docs/images/agenda-en-dark.png" width="320" alt="WorkHarbor dark" /></p>
+> **Development preview:** build from source on macOS. Local builds are ad-hoc signed, not notarized; test with disposable calendars before relying on synchronization.
 
-Native view rendered on macOS with synthetic events. No private calendar data.
+## A calmer way to see your day
 
-## A lighter daily rhythm
+<p align="center"><img src="docs/images/agenda-en-light.png" width="320" alt="WorkHarbor agenda in light mode, with upcoming events grouped by day" /> <img src="docs/images/agenda-en-dark.png" width="320" alt="WorkHarbor agenda in dark mode, highlighting an event in progress" /></p>
 
-- A native SwiftUI menu-bar panel with upcoming events, calendar colors, ongoing events, and day groups.
-- A separate settings window for calendar selection and synchronization rules.
-- **Busy** copies that share time without titles, notes, or locations; optional before/after buffers.
-- Full-detail copies when you explicitly choose to share event details.
-- Per-rule automatic synchronization, tied to the exact source, destination, mode, and buffers you approved.
-- Reviewed cleanup of identified duplicates, preserving the tracked up-to-date copy.
-- English, Brazilian Portuguese, and Spanish interface options.
+<p align="center"><em>Native macOS interface, shown with fictional events.</em></p>
 
-## How it works
+### One glance, less switching
 
-```text
-Calendars configured in macOS
-          ↓ EventKit
-   WorkHarbor on your Mac
-          ↓ authorized copies
-   Selected destination calendars
-```
+Open the menu-bar panel to see upcoming events grouped by day, with calendar colors and an indicator for events happening now. Choose which calendars appear and keep configuration in a separate settings window.
 
-Your existing Apple Calendar accounts handle provider synchronization. WorkHarbor requires its own Calendar permission; permission granted to Apple's app does not transfer to it. Account restrictions and read-only calendars still apply.
+### Share your availability, not your personal plans
 
-The menu displays the next seven days, up to 80 events. Synchronization examines the previous 30 days and next 180 days. It runs while the app is open and your Mac is awake, including after wake and calendar-change notifications. It is not a cloud service or a real-time remote-delivery guarantee.
+Create **Busy** copies in another calendar without the original title, notes, or location. Add time before and after timed events for travel, preparation, or a little breathing room.
 
-## Safety by design
+### Keep the details where you need them
 
-- Copies carry a WorkHarbor marker and are tracked locally. Titles alone never establish ownership.
-- A missing source is **not** treated as a deletion. Background synchronization never deletes events.
-- Cleanup requires a current tracked copy, explicit selection, and confirmation. Older unmarked copies, other installations, and unmatched identities are not guessed away.
-- Cyclic and redundant routes are blocked. A Busy-only destination cannot become the source of another route.
-- A durable pending-write journal blocks retries after an uncertain write. Do not delete it to force a retry.
-- Existing identities, rules, and inventory are preserved when migrating from earlier previews. Retired mail data and credentials are not loaded or deleted by the calendar-only app.
+Choose **Full details** for routes that should carry event titles, times, notes, and locations. Each route has an explicit source and destination, so you decide what goes where.
 
-## Build on macOS
+### Start with a preview. Automate when ready.
 
-Requirements: macOS 14 or later and Xcode/Swift 6 tooling. No third-party Swift dependencies.
+Review proposed changes before applying them, then optionally enable automatic synchronization for that specific route. Background synchronization creates and updates copies; it never deletes events.
+
+Light and dark appearances. English, Brazilian Portuguese, and Spanish. A native app that stays close without taking over your workspace.
+
+## Make your calendars work together
+
+1. **Use your existing calendars.** Configure accounts in Apple Calendar, then grant WorkHarbor its own Calendar access.
+2. **Choose your view.** Show all calendars in the menu or select just the ones you need.
+3. **Create a one-way route.** Pick a source, a writable destination, and Busy or Full details.
+4. **Review the result.** Check the proposed copies before confirming changes.
+5. **Keep it manual or enable automatic sync.** Automatic permission applies only to the exact route configuration you approve.
+
+For example: keep a personal appointment visible in your own agenda while showing only a Busy block on your work calendar. WorkHarbor creates separate copies, not a two-way calendar merge.
+
+## Get started
+
+You need **macOS 14 or later** and **Xcode or Command Line Tools with Swift 6**. There are no third-party Swift package dependencies.
 
 ```sh
+git clone https://github.com/bloodf/workharbor.git
+cd workharbor
 ./scripts/test.sh
 ./scripts/build-app.sh
+open dist/WorkHarbor.app
 ```
 
-The script creates an ad-hoc-signed local app and ZIP under `dist/`. Ad-hoc signing is not Apple notarization. Quit an older WorkHarbor instance before opening a new build. Never bypass system security warnings to run an untrusted download.
+The build script creates `dist/WorkHarbor.app` and `dist/WorkHarbor.zip`. Quit any existing WorkHarbor instance before opening the new build. Do not bypass macOS security warnings for an untrusted download. For distributable packages, see the [release and packaging guide](docs/RELEASING.md).
 
-## Privacy
+Prefer to explore without connecting a calendar? After building, launch the sample-data mode:
 
-Calendar access stays in EventKit on your Mac. WorkHarbor has no analytics, email reader, AI endpoint, or calendar backend. Calendar copies can be transmitted by macOS to the providers of the destination accounts you select. Full-detail rules include titles, notes, and locations; Busy rules do not.
+```sh
+dist/WorkHarbor.app/Contents/MacOS/WorkHarbor --synthetic-demo
+```
 
-Do not post calendar exports, account identifiers, secrets, or private events in issue reports. Use synthetic examples.
+This mode uses fictional events and blocks access to real calendars.
 
-## Project status
+## Local by design. Explicit about sharing.
 
-The menu-bar redesign is under validation. Provider behavior, notification timing, time-zone edge cases, and accessibility need continued testing. Visual assets are original vector artwork; promotional artwork is illustrative, not proof of a running feature.
+WorkHarbor uses Apple's EventKit on your Mac, with no WorkHarbor account, analytics, or calendar backend. Your existing calendar providers still handle remote synchronization, and copies are shared according to the destination calendar's access settings.
 
-License has not yet been selected. No redistribution license is implied.
+- **Your choice of detail:** Busy hides the original title, notes, and location; Full details shares them.
+- **Your choice of automation:** enable or pause each route independently.
+- **Conservative changes:** tracked copies, route validation, and reviewed duplicate cleanup help avoid unintended changes.
+
+The agenda shows up to 80 events over the next seven days. Synchronization covers the previous 30 and next 180 days, while the app is open and the Mac is awake. Provider compatibility and remote delivery timing need testing; this is not an always-on cloud service.
+
+Read the [synchronization guide](docs/synchronization.md), [privacy notes](docs/privacy.md), and [troubleshooting guide](SUPPORT.md) for the boundaries that matter.
+
+## Build it with us
+
+Help make a focused, open-source calendar companion better. Useful contributions include reproducible bug reports, accessibility improvements, translations, tests, and native macOS polish.
+
+- [Contribution guide](CONTRIBUTING.md)
+- [Report a bug or suggest an improvement](https://github.com/bloodf/workharbor/issues/new/choose)
+- [Architecture](docs/architecture.md) · [Changelog](CHANGELOG.md)
+- [Code of conduct](CODE_OF_CONDUCT.md) · [Security policy](SECURITY.md)
+
+If WorkHarbor fits your workflow, give the project a star and help others find it.
+
+## License
+
+[MIT](LICENSE) · Copyright © 2026 Heitor Ribeiro.

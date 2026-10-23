@@ -1,0 +1,42 @@
+name: Feature request
+description: Suggest a focused improvement to WorkHarbor.
+title: "[Feature]: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Tell us about the workflow you want to improve. English, Portuguese, and Spanish are welcome.
+        Please use fictional examples and search existing issues before submitting.
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem would this solve?
+      description: Explain the workflow or limitation, without personal calendar details.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed experience
+      description: Describe what you would like to happen and who it would help.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Optional. Describe existing approaches and why they do not meet the need.
+  - type: textarea
+    id: implications
+    attributes:
+      label: Privacy, permissions, or synchronization implications
+      description: Optional. Would the feature copy more data, change authorization, or modify existing events?
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before submitting
+      options:
+        - label: I checked existing issues for a similar request.
+          required: true
+        - label: This request contains only fictional examples and no private data.
+          required: true

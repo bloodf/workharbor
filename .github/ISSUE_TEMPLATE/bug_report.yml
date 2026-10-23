@@ -1,0 +1,62 @@
+name: Bug report
+description: Report a reproducible problem using fictional data.
+title: "[Bug]: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping improve WorkHarbor. English, Portuguese, and Spanish are welcome.
+        For suspected vulnerabilities, follow [SECURITY.md](https://github.com/bloodf/workharbor/blob/main/SECURITY.md) instead of posting details here.
+        Do not upload real calendar exports, credentials, account identifiers, or local state files.
+  - type: textarea
+    id: problem
+    attributes:
+      label: What happened?
+      description: Explain the observed behavior and what you expected.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to reproduce
+      description: Use fictional calendars and events. Describe the route mode and buffers if relevant, not account addresses or calendar IDs.
+      placeholder: |
+        1. Create a fictional event in a disposable calendar.
+        2. ...
+        3. Observe ...
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: WorkHarbor version or commit
+      description: Include how you installed or built it.
+      placeholder: "Source build, commit abc1234"
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: macOS version and Mac architecture
+      placeholder: "macOS version; Apple silicon or Intel"
+    validations:
+      required: true
+  - type: input
+    id: calendar_type
+    attributes:
+      label: Calendar provider type and interface language
+      description: Optional. Provider type only, never account addresses or calendar identifiers.
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Sanitized error or fictional-data screenshot
+      description: Optional. Remove private events, participant names, meeting links, account details, and local paths. Do not paste settings, inventory, or pending-write files.
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before submitting
+      options:
+        - label: I checked existing issues for the same problem.
+          required: true
+        - label: This report contains no private calendar data, credentials, account identifiers, or local state files.
+          required: true

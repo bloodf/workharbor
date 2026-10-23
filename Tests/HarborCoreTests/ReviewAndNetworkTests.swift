@@ -23,6 +23,15 @@ final class ReviewAndNetworkTests: XCTestCase {
         current.sources.append(.init(key: "new", value: .init(title: "new", start: now, end: now + 3600)))
         XCTAssertThrowsError(try ReviewGuard.validate(confirmed: true, demo: false, fullAccess: true, createdAt: now, now: now, reviewed: snapshot, current: current))
     }
+    func testIdenticalUnlocatedIDsStillBlockManualWrite() {
+        let missing = SyncSnapshot(sources: [], copies: [], unlocatedTrackedIDs: ["missing-local-id"])
+        XCTAssertThrowsError(try ReviewGuard.validate(confirmed: true, demo: false, fullAccess: true, createdAt: now, now: now, reviewed: missing, current: missing))
+    }
+    func testUnlocatedIDInEitherSnapshotBlocksWrite() {
+        let missing = SyncSnapshot(sources: [], copies: [], unlocatedTrackedIDs: ["missing-local-id"])
+        XCTAssertThrowsError(try ReviewGuard.validate(confirmed: true, demo: false, fullAccess: true, createdAt: now, now: now, reviewed: missing, current: snapshot))
+        XCTAssertThrowsError(try ReviewGuard.validate(confirmed: true, demo: false, fullAccess: true, createdAt: now, now: now, reviewed: snapshot, current: missing))
+    }
     func testUnchangedFreshAuthorizedReviewPasses() {
         XCTAssertNoThrow(try ReviewGuard.validate(confirmed: true, demo: false, fullAccess: true, createdAt: now, now: now, reviewed: snapshot, current: snapshot))
     }

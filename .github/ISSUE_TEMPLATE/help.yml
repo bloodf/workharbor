@@ -1,0 +1,33 @@
+name: Help or question
+description: Ask about setup, usage, or contributing.
+title: "[Question]: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please read [SUPPORT.md](https://github.com/bloodf/workharbor/blob/main/SUPPORT.md) first.
+        English, Portuguese, and Spanish are welcome. Do not share real calendar data or local state files.
+  - type: textarea
+    id: question
+    attributes:
+      label: What do you need help with?
+      description: Describe your goal and where you got stuck.
+    validations:
+      required: true
+  - type: textarea
+    id: tried
+    attributes:
+      label: What have you tried?
+      description: Include relevant documentation or existing issues you checked.
+  - type: input
+    id: environment
+    attributes:
+      label: Version and environment
+      description: If relevant, include the WorkHarbor version or commit, installation method, and macOS version. Do not include account identifiers.
+  - type: checkboxes
+    id: privacy
+    attributes:
+      label: Privacy check
+      options:
+        - label: This question contains no private events, credentials, account identifiers, or local state files.
+          required: true

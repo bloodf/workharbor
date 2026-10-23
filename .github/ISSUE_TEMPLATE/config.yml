@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Read the support guide
+    url: https://github.com/bloodf/workharbor/blob/main/SUPPORT.md
+    about: Setup help, troubleshooting, and safe bug-reporting guidance.
+  - name: Report a security concern safely
+    url: https://github.com/bloodf/workharbor/blob/main/SECURITY.md
+    about: Read the security policy before sharing any vulnerability details.
