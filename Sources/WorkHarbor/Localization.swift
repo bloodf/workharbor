@@ -9,6 +9,21 @@ enum L10n {
         return strings[key]?[index] ?? diagnostics[key]?[index] ?? key
     }
     static let strings:[String:[String]]=[
+        "inspectCopies":["Inspect copies","Diagnosticar cópias","Diagnosticar copias"],
+        "inspectionReadOnly":["Read-only inspection of identifiers and markers. No calendar events or tracking data changed.","Inspeção somente leitura de IDs e marcadores. Nenhum evento ou dado de rastreamento alterado.","Inspección de solo lectura de IDs y marcadores. No se modificaron eventos ni datos de seguimiento."],
+        "identity_located":["Located by ID","Localizadas pelo ID","Localizadas por ID"],
+        "identity_recoverable":["Exact matches available to reconnect","Correspondências exatas para reconectar","Coincidencias exactas para reconectar"],
+        "identity_missing":["Not located in the searched dates","Não localizadas nas datas consultadas","No localizadas en las fechas consultadas"],
+        "identity_mismatch":["Marker or calendar mismatch","Marcador ou calendário divergente","Marcador o calendario distinto"],
+        "identity_ambiguous":["Multiple copies with the same marker","Várias cópias com o mesmo marcador","Varias copias con el mismo marcador"],
+        "identity_unsafe":["Participants or recurrence: manual review","Participantes ou recorrência: revisão manual","Participantes o recurrencia: revisión manual"],
+        "inspectionUnknown":["Not found does not mean deleted. Unknown copies remain tracked and blocked; no events will be recreated by this action.","Não encontrada não significa apagada. Cópias desconhecidas continuam rastreadas e bloqueadas; esta ação não recria eventos.","No encontrada no significa eliminada. Las copias desconocidas siguen registradas y bloqueadas; esta acción no recrea eventos."],
+        "reconnectCopies":["Reconnect exact identities","Reconectar identidades exatas","Reconectar identidades exactas"],
+        "reconnectQuestion":["Reconnect verified copy identities?","Reconectar identidades verificadas?","¿Reconectar identidades verificadas?"],
+        "reconnectDetail":["Saves a backup and updates only local tracking IDs for exact unique matches. No calendar events are changed. Previously authorized automatic sync may resume for resolved routes.","Cria backup e atualiza apenas IDs locais com correspondência única exata. Nenhum evento é alterado. A sincronização automática já autorizada pode retomar nas rotas resolvidas.","Crea una copia de seguridad y actualiza solo IDs locales con coincidencia única exacta. No modifica eventos. La sincronización automática ya autorizada puede reanudarse en rutas resueltas."],
+        "reconnected":["Identities reconnected","Identidades reconectadas","Identidades reconectadas"],
+        "inspectAgain":["Configuration changed. Inspect again.","A configuração mudou. Diagnostique novamente.","Cambió la configuración. Diagnostique de nuevo."],
+        "diagnosticDemo":["Real-calendar diagnostics are disabled in the demo.","Diagnóstico de calendários reais desativado na demonstração.","Diagnóstico de calendarios reales desactivado en la demostración."],
         "missingIdentityBlock":["Tracked copies could not be located. All writes are blocked until identities are reconciled.","Cópias rastreadas não localizadas. Todas as gravações estão bloqueadas até reconciliar as identidades.","No se localizaron copias registradas. Todas las escrituras están bloqueadas hasta reconciliar las identidades."],
         "missingIDs":["Missing copy identities","Identidades de cópia não localizadas","Identidades de copia no localizadas"],
         "unmatchedSources":["Located copies without a source in this window","Cópias localizadas sem origem nesta janela","Copias localizadas sin origen en esta ventana"],

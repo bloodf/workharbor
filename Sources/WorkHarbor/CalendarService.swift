@@ -20,6 +20,17 @@ struct CalendarReview: Identifiable {
     }
 }
 
+struct CopyInspectionReport: Identifiable {
+    let id=UUID()
+    let rule:MirrorRule
+    let installation:UUID
+    let interval:DateInterval
+    let inventory:[String:String]
+    let findings:[CopyIdentityFinding]
+    let createdAt=Date()
+    var repairable:Set<String> {Set(findings.filter {$0.state == .recoverable}.map(\.marker))}
+}
+
 @MainActor
 final class CalendarService {
     private let store = EKEventStore()
@@ -132,6 +143,70 @@ final class CalendarService {
         guard fullAccess else { throw HarborError.invalid("Permissão revogada durante a leitura.") }
         return SyncSnapshot(sources: sources.sorted { $0.key < $1.key }, copies: copies, unlocatedTrackedIDs: unlocated, preferredCopyIDs:inventory.filter { $0.key.hasPrefix(prefix) })
     }
+    /// Pure metadata audit: never calls snapshot, saves an event, or rebinds inventory.
+    func inspectCopies(rule:MirrorRule,installation:UUID,interval supplied:DateInterval? = nil) throws -> CopyInspectionReport {
+        guard fullAccess, !inventoryError else {throw HarborError.invalid("Calendar access or readable inventory is required.")}
+        guard let destination=store.calendar(withIdentifier:rule.destinationID) else {throw HarborError.invalid("Destination calendar is unavailable.")}
+        let now=Date(), cal=Calendar(identifier:.gregorian)
+        let interval=supplied ?? DateInterval(start:cal.date(byAdding:.year,value:-2,to:now)!,end:cal.date(byAdding:.year,value:2,to:now)!)
+        guard interval.duration > 0, interval.duration < 1465*86400 else {throw HarborError.invalid("Invalid diagnostic date window.")}
+        let prefix=Reconciler.prefix(installation:installation,rule:rule)
+        let expected=inventory.filter {$0.key.hasPrefix(prefix)}
+        func observe(_ event:EKEvent)->CopyIdentityObservation? {
+            guard let id=event.eventIdentifier else {return nil}
+            return CopyIdentityObservation(id:id,marker:event.url?.absoluteString,calendarID:event.calendar.calendarIdentifier,
+                                           unsafe:event.hasAttendees || event.organizer != nil || event.hasRecurrenceRules || event.isDetached)
+        }
+        var direct:[String:CopyIdentityObservation]=[:]
+        for id in expected.values {
+            if let event=store.event(withIdentifier:id),let observation=observe(event) {direct[id]=observation}
+        }
+        // EventKit silently truncates queries longer than four years. Use <=1-year chunks.
+        var searched:[CopyIdentityObservation]=[], cursor=interval.start
+        while cursor < interval.end {
+            let end=min(cal.date(byAdding:.year,value:1,to:cursor)!,interval.end)
+            for event in store.events(matching:store.predicateForEvents(withStart:cursor,end:end,calendars:[destination])) {
+                if let marker=event.url?.absoluteString, expected[marker] != nil, let observation=observe(event) {searched.append(observation)}
+            }
+            cursor=end
+        }
+        guard fullAccess else {throw HarborError.invalid("Calendar permission changed during inspection.")}
+        return CopyInspectionReport(rule:rule,installation:installation,interval:interval,inventory:inventory,
+            findings:IdentityInspection.inspect(expected:expected,destinationID:rule.destinationID,direct:direct,searched:searched))
+    }
+    func reconnectCopies(_ report:CopyInspectionReport,confirmed:Bool) throws -> Int {
+        guard confirmed, inventory == report.inventory, Date().timeIntervalSince(report.createdAt) < 300,
+              Date() >= report.createdAt, !inventoryError else {throw HarborError.invalid("Inspection expired or inventory changed. Inspect again.")}
+        guard !FileManager.default.fileExists(atPath:pendingWriteURL.path) else {throw HarborError.invalid("A pending write must be reconciled before identity recovery.")}
+        func readDiskInventory() throws -> (Data,[String:String]) {
+            do {
+                let data=try Data(contentsOf:inventoryURL)
+                return (data,try JSONDecoder().decode([String:String].self,from:data))
+            } catch {inventoryError=true;throw error}
+        }
+        let (originalBytes,diskInventory)=try readDiskInventory()
+        guard diskInventory == inventory, diskInventory == report.inventory else {
+            inventoryError=true
+            throw HarborError.invalid("Tracking data changed on disk. Writes are blocked; restart and inspect again.")
+        }
+        let fresh=try inspectCopies(rule:report.rule,installation:report.installation,interval:report.interval)
+        guard try readDiskInventory().0 == originalBytes else {
+            inventoryError=true
+            throw HarborError.invalid("Tracking data changed during inspection. No recovery was saved.")
+        }
+        let repaired=try IdentityInspection.repairedInventory(original:inventory,reviewed:report.findings,current:fresh.findings,
+                                                            selected:report.repairable,confirmed:confirmed)
+        let backup=inventoryURL.deletingLastPathComponent().appendingPathComponent("copies-before-reconnect-"+UUID().uuidString+".json")
+        do {
+            try originalBytes.write(to:backup,options:.atomic)
+            try FileManager.default.setAttributes([.posixPermissions:0o600],ofItemAtPath:backup.path)
+            try JSONEncoder().encode(repaired).write(to:inventoryURL,options:.atomic)
+            try FileManager.default.setAttributes([.posixPermissions:0o600],ofItemAtPath:inventoryURL.path)
+            inventory=repaired
+        } catch {inventoryError=true;throw HarborError.invalid("Could not save recovered identities. Writes remain blocked; backup and original data were preserved where possible.")}
+        return report.repairable.count
+    }
+
     func preview(rule: MirrorRule, installation: UUID) throws -> CalendarReview {
         let now = Date()
         let interval = DateInterval(start: now.addingTimeInterval(-30 * 86400), end: now.addingTimeInterval(180 * 86400))

@@ -1,6 +1,7 @@
 import SwiftUI
 import HarborCore
 struct ContentView:View {
+    @State private var confirmReconnect=false
     @ObservedObject var model:AppModel
     @State private var tab="general"
     @State private var selectedCleanupIDs:Set<String>=[]
@@ -84,12 +85,31 @@ struct ContentView:View {
                     Picker(model.t("mode"),selection:$rule.mode) {Text(model.t("busy")).tag(MirrorMode.busy);Text(model.t("details")).tag(MirrorMode.details)}.pickerStyle(.segmented)
                     if rule.mode == .busy { HStack {Stepper("\(model.t("before")): \(rule.beforeMinutes)",value:$rule.beforeMinutes,in:0...240,step:5);Stepper("\(model.t("after")): \(rule.afterMinutes)",value:$rule.afterMinutes,in:0...240,step:5)}.font(.caption) }
                     Toggle(model.t("automatic"),isOn:Binding(get:{AutomaticSyncPolicy.isAuthorized(rule)},set:{enabled in if enabled {automaticRule=rule} else {model.setAutomatic(false,for:rule)}}))
-                    HStack {Button(model.t("review")) {model.preview(rule)};Button(model.t("cleanup")) {model.previewCleanup(rule)};Spacer();Button {removingRule=rule} label:{Image(systemName:"trash")}.help(model.t("removeRule"))}.controlSize(.small)
+                    HStack {Button(model.t("review")) {model.preview(rule)};Button(model.t("cleanup")) {model.previewCleanup(rule)};Button(model.t("inspectCopies")) {model.inspectCopies(rule)};Spacer();Button {removingRule=rule} label:{Image(systemName:"trash")}.help(model.t("removeRule"))}.controlSize(.small)
                 }.padding(16).background(Color.primary.opacity(0.035),in:RoundedRectangle(cornerRadius:14))
             }
             HStack {Button {model.settings.rules.append(MirrorRule())} label:{Label(model.t("add"),systemImage:"plus")};Spacer();Button(model.t("save")) {model.save()}.buttonStyle(.borderedProminent).disabled(!model.storageReady)}
+            if let inspection=model.copyInspection { inspectionView(inspection) }
             if let review=model.review { reviewView(review) }
         }
+    }
+    private func inspectionView(_ report:CopyInspectionReport)->some View {
+        VStack(alignment:.leading,spacing:10) {
+            Divider();Text(model.t("inspectCopies")).font(.title3.bold())
+            Text(model.calendars.first(where:{$0.id == report.rule.destinationID})?.name ?? model.t("route")).font(.caption)
+            Text(model.t("inspectionReadOnly")).font(.caption).foregroundStyle(.secondary)
+            Text(report.interval.start.formatted(date:.abbreviated,time:.omitted)+" – "+report.interval.end.formatted(date:.abbreviated,time:.omitted)).font(.caption)
+            ForEach([CopyIdentityState.located,.recoverable,.missing,.mismatch,.ambiguous,.unsafe],id:\.rawValue) {state in
+                HStack {Text(model.t("identity_"+state.rawValue));Spacer();Text(String(report.findings.filter {$0.state == state}.count)).monospacedDigit()}.font(.callout)
+            }
+            Text(model.t("inspectionUnknown")).font(.caption).foregroundStyle(.orange)
+            Button(model.t("reconnectCopies")+" ("+String(report.repairable.count)+")") {confirmReconnect=true}
+                .disabled(report.repairable.isEmpty || !model.storageReady)
+                .confirmationDialog(model.t("reconnectQuestion"),isPresented:$confirmReconnect,titleVisibility:.visible) {
+                    Button(model.t("confirm")) {model.reconnectCopies()}
+                    Button(model.t("cancel"),role:.cancel) {}
+                } message: {Text(model.t("reconnectDetail"))}
+        }.padding(12).background(Color.primary.opacity(0.03),in:RoundedRectangle(cornerRadius:10))
     }
     private func reviewView(_ review:CalendarReview)->some View {
         VStack(alignment:.leading,spacing:12) {

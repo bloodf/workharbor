@@ -53,6 +53,14 @@ Stop and read the error. Check the destination in Apple Calendar before making f
 
 If needed, open a report with a sanitized description and fictional reproduction. Never attach your settings, copy inventory, or pending-write journal publicly. There is no documented self-service “force retry” recovery procedure.
 
+### Tracked copy identities cannot be located
+
+In Settings → Calendar sync, choose **Inspect copies** for the affected route. This read-only operation looks up stored IDs and exact WorkHarbor markers in the intended destination, over the displayed two-years-before/two-years-after window using one-year query chunks. It does not modify events or the tracking inventory, and does not read event titles or descriptions for the report.
+
+If exact, unique, safe matches exist, **Reconnect exact identities** offers a separate confirmation. Recovery freshly validates the result, preserves a local backup of the original tracking file, and changes only local identity bindings. Calendar events are not created, updated, or deleted by recovery. Previously authorized automatic routes may resume afterward.
+
+Unknown absence, changed markers/calendars, multiple matching copies, participants, and recurrence are not repaired by guessing. Copies outside the finite search window may remain unresolved. A pending write journal blocks this recovery path; do not remove it. Share only anonymized counts when asking for help.
+
 ### A source event was deleted, but its copy remains
 
 This is intentional. A missing source is not reliable proof of deletion, so WorkHarbor preserves the copy. It does not perform automatic cancellation propagation. Review the event in Apple Calendar; duplicate cleanup is not a general-purpose deletion tool.

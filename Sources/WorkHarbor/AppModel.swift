@@ -11,6 +11,7 @@ final class AppModel:ObservableObject {
     @Published var agendaError:String?
     @Published var automaticSyncIssue:String?
     @Published var review:CalendarReview?
+    @Published var copyInspection:CopyInspectionReport?
     @Published var storageReady=true
     @Published var lastRefresh:Date?
     private var automaticTask:Task<Void,Never>?
@@ -59,6 +60,22 @@ final class AppModel:ObservableObject {
             review=try calendar.previewCleanup(rule:rule,installation:settings.installationID)
             status="Prévia de duplicatas identificadas. Nenhuma exclusão selecionada. Versão de criação legada é desconhecida."
         } catch { review=nil;self.error=error.localizedDescription }
+    }
+    func inspectCopies(_ rule:MirrorRule) {
+        guard !isSyntheticDemo else {error=t("diagnosticDemo");return}
+        do {
+            copyInspection=try calendar.inspectCopies(rule:rule,installation:settings.installationID)
+            status=t("inspectionReadOnly")
+        } catch {copyInspection=nil;self.error=error.localizedDescription}
+    }
+    func reconnectCopies() {
+        guard !isSyntheticDemo,storageReady,let report=copyInspection,
+              settings.rules.contains(report.rule),settings.installationID == report.installation else {error=t("inspectAgain");return}
+        do {
+            let count=try calendar.reconnectCopies(report,confirmed:true)
+            copyInspection=nil;review=nil;status=t("reconnected")+": "+String(count)
+            scheduleAutomaticSync()
+        } catch {copyInspection=nil;self.error=error.localizedDescription}
     }
     func demo() { do { review = try CalendarService.demo() } catch { self.error = error.localizedDescription } }
     func apply(includeDeletions: Bool, cleanupIDs:Set<String> = []) {

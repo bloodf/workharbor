@@ -6,6 +6,8 @@ User-visible changes are recorded here. `Unreleased` describes the current devel
 
 ### Added
 
+- Read-only, in-app copy-identity inspection with bounded date searches, and separately confirmed metadata-only reconnection for exact unique safe matches. Unknown copies remain blocked; local tracking backups are preserved.
+
 - Native macOS menu-bar agenda with calendar selection, day grouping, calendar colors, and in-progress event indicators.
 - Light and dark appearances and English, Brazilian Portuguese, and Spanish interfaces.
 - One-way calendar routes with Busy or Full details copies and configurable Busy buffers.
