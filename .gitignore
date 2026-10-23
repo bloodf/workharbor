@@ -1,0 +1,12 @@
+.build/
+dist/
+.DS_Store
+Validation/
+*.xcuserstate
+xcuserdata/
+settings.json
+copies.json
+pending-write.json
+chat-history.json
+.env
+.env.*

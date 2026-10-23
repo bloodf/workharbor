@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleDisplayName</key>
+	<string>WorkHarbor</string>
+	<key>CFBundleExecutable</key>
+	<string>WorkHarbor</string>
+	<key>CFBundleIdentifier</key>
+	<string>local.workharbor.mac</string>
+	<key>CFBundleName</key>
+	<string>WorkHarbor</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>0.2.0</string>
+	<key>CFBundleVersion</key>
+	<string>12</string>
+	<key>LSMinimumSystemVersion</key>
+	<string>14.0</string>
+	<key>LSUIElement</key>
+	<true/>
+	<key>NSCalendarsFullAccessUsageDescription</key>
+	<string>View upcoming events and synchronize the calendars you choose. Review changes or explicitly enable automatic sync.</string>
+	<key>NSCalendarsUsageDescription</key>
+	<string>View events and create authorized copies in selected calendars.</string>
+	<key>CFBundleIconFile</key>
+	<string>AppIcon</string>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>en</string>
+	<key>NSHighResolutionCapable</key>
+	<true/>
+</dict>
+</plist>
