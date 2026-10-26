@@ -56,3 +56,14 @@ A failure can leave the pending record in place and block later writes. This is 
 These tests do not exercise live provider accounts, establish remote delivery timing, certify accessibility, or prove that every provider preserves EventKit identifiers and markers. Those need separate, carefully scoped manual validation using disposable calendars.
 
 Use the app's synthetic demo for visual work. See [Contributing](../CONTRIBUTING.md) for commands and [Synchronization](synchronization.md) for user-facing semantics.
+
+
+## Status-bar input and quick options
+
+`AppDelegate` owns one `StatusItemController` backed by `NSStatusItem` and a transient `NSPopover`. Its content remains `AgendaPopover`. The status button requests left/right mouse-up actions; native right-mouse-up (including a configured trackpad secondary click) and Control-left-mouse-up route to `NSMenu`. Normal keyboard/AX press routes to the agenda. Explicit accessibility custom actions expose agenda and quick options independently.
+
+`StatusMenuSession` records at most one enabled selection and returns it only after menu tracking ends. Cancellation returns nil. The status item's `menu` stays nil so secondary use cannot hijack the next primary click. Refresh eligibility is checked at presentation and again before executing. No calendar write, permission request or automatic synchronization is attached to opening the menu.
+
+`--synthetic-demo --test-status-menu` runs in-process AppKit QA with a new synthetic model, factory-created NSEvents and real native menu tracking. It never posts global mouse/keyboard events, operates the physical trackpad, opens live calendar data or exits another app instance. Menu callbacks use test counters; the test's Quit selection is deliberately intercepted. Native-menu cancellation is timer-driven so the harness exits without manual interaction.
+
+Public API references: [NSStatusItem](https://developer.apple.com/documentation/appkit/nsstatusitem), [NSMenu pop-up](https://developer.apple.com/documentation/appkit/nsmenu/popup(positioning:at:in:)), [NSAccessibilityCustomAction](https://developer.apple.com/documentation/appkit/nsaccessibilitycustomaction).

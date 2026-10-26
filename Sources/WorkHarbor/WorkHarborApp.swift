@@ -2,14 +2,13 @@ import SwiftUI
 import AppKit
 import EventKit
 import HarborCore
+import Combine
 
 @main
 struct WorkHarborApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var delegate
     var body: some Scene {
-        MenuBarExtra("WorkHarbor", systemImage: "calendar.badge.clock") {
-            AgendaPopover(model:delegate.model,openSettings:delegate.showWindow)
-        }.menuBarExtraStyle(.window)
+        Settings { EmptyView() } // The AppKit status item owns primary and secondary input.
     }
 }
 @MainActor
@@ -19,6 +18,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var instanceLock: ProcessLock?
     private var observers: [NSObjectProtocol] = []
     private var syncTimer: Timer?
+    private var statusController: StatusItemController?
+    private var languageObservation:AnyCancellable?
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApplication.shared.setActivationPolicy(.accessory)
         if !model.isSyntheticDemo {
@@ -33,6 +34,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 let alert=NSAlert();alert.messageText="WorkHarbor";alert.informativeText=model.t(error.localizedDescription);alert.addButton(withTitle:"OK");alert.runModal()
                 NSApplication.shared.terminate(nil);return
             }
+        }
+        if model.isSyntheticDemo, CommandLine.arguments.contains("--test-status-menu") {
+            Task { @MainActor [self] in
+                do { try await StatusItemSyntheticQA.run(model:model);print("STATUS_MENU_QA_OK") }
+                catch { print("STATUS_MENU_QA_FAILED: \(error)");exit(1) }
+                NSApplication.shared.terminate(nil)
+            }
+            return
         }
         if model.isSyntheticDemo, let index=CommandLine.arguments.firstIndex(of:"--render-previews"),CommandLine.arguments.count > index+1 {
             let folder=URL(fileURLWithPath:CommandLine.arguments[index+1],isDirectory:true)
@@ -71,6 +80,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             } catch { print("SYNTHETIC_PREVIEWS_FAILED: \(error)") }
             NSApplication.shared.terminate(nil);return
         }
+        let agenda=NSHostingController(rootView:AgendaPopover(model:model,openSettings:{ [weak self] in
+            self?.statusController?.closeAgenda();self?.showWindow()
+        }))
+        statusController=StatusItemController(agenda:agenda,title:{ [weak model] in model?.t($0) ?? $0 },
+            canRefresh:{ [weak model] in guard let model else {return false};return model.isSyntheticDemo || model.calendar.fullAccess },
+            openSettings:{ [weak self] in self?.showWindow() },refresh:{ [weak model] in model?.refreshAgenda() },
+            quit:{NSApplication.shared.terminate(nil)})
+        languageObservation=model.$settings.map(\.language).removeDuplicates().sink { [weak self] _ in
+            DispatchQueue.main.async {self?.statusController?.updateAccessibility()}
+        }
         observers.append(NotificationCenter.default.addObserver(forName: .EKEventStoreChanged, object: nil, queue: .main) { [weak self] _ in
             Task { @MainActor in self?.model.invalidateReview() }
         })
@@ -83,6 +102,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         model.scheduleAutomaticSync()
         model.refreshAgenda()
     }
+    func applicationWillTerminate(_ notification:Notification) { languageObservation?.cancel();statusController?.invalidate() }
     func showWindow() {
         if window == nil {
             let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 760, height: 640), styleMask: [.titled, .closable, .miniaturizable, .resizable], backing: .buffered, defer: false)

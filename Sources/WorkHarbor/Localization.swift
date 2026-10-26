@@ -9,6 +9,10 @@ enum L10n {
         return strings[key]?[index] ?? diagnostics[key]?[index] ?? key
     }
     static let strings:[String:[String]]=[
+        "quickOptions":["Quick options","Opções rápidas","Opciones rápidas"],
+        "openAgenda":["Open agenda","Abrir agenda","Abrir agenda"],
+        "quickMenuHint":["Click to open the agenda. Secondary click or Control-click for quick options.","Clique para abrir a agenda. Clique secundário ou Control-clique para opções rápidas.","Haz clic para abrir la agenda. Clic secundario o Control-clic para opciones rápidas."],
+        "refreshUnavailable":["Allow Calendar access in Settings before refreshing.","Permita acesso ao Calendário nas Configurações antes de atualizar.","Permite acceso al Calendario en Configuración antes de actualizar."],
         "version":["Version","Versão","Versión"],
         "build":["Build","Build","Build"],
         "openSync":["Open calendar sync","Abrir sincronização de agendas","Abrir sincronización de calendarios"],

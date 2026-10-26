@@ -94,3 +94,12 @@ Open the menu-bar panel, choose Settings, and read **Version / Build** in Genera
 If the expected button or full version/build is absent, quit the old instance from its own menu before opening the intended app. Do not delete the instance lock or local inventory to force a second instance.
 
 Inspection searches a finite, displayed date range. A direct ID can still identify a copy outside that range. A missing result is not proof of deletion or cancellation. Previews preserve unknown IDs; only separately confirmed exact, unique and safe matches can reconnect local tracking. Each reconnection preserves the original file bytes in a new private backup. A changed or unreadable inventory blocks further writes rather than replacing it with an empty file.
+
+
+### Quick options from the menu-bar icon
+
+Primary click opens or closes the agenda. Use a secondary mouse click, a trackpad secondary click configured in macOS, or Control-click for **Quick options**. The menu offers Open agenda, Settings, Refresh and Quit. Opening it or dismissing it with Escape/clicking outside runs no command. Refresh is disabled until calendar access has already been granted in Settings; selecting or opening the menu does not request access.
+
+With VoiceOver, use the status button's custom **Quick options** action; its **Open agenda** action remains available. The native menu supports arrow-key navigation, Return to choose, and Escape to dismiss. Normal keyboard activation of the status button keeps the primary agenda behavior.
+
+Physical trackpad behavior depends on the secondary-click gesture configured in macOS. Automated synthetic event tests do not establish that a particular hardware gesture is configured or has been tested physically.

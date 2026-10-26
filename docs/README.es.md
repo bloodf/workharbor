@@ -96,3 +96,6 @@ Si WorkHarbor encaja en tu rutina, deja una estrella en el proyecto y ayuda a ot
 ## Licencia
 
 [MIT](../LICENSE) · Copyright © 2026 Heitor Ribeiro.
+
+
+El clic principal abre la agenda. Un clic secundario (incluido el gesto configurado del trackpad) o Control-clic abre opciones rápidas de agenda, configuración, actualización y salida. VoiceOver ofrece la acción Opciones rápidas.

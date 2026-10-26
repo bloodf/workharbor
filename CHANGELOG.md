@@ -4,6 +4,15 @@ User-visible changes are recorded here. `Unreleased` describes the current devel
 
 ## [Unreleased]
 
+### 0.2.4 development preview (build 16)
+
+- Secondary mouse/trackpad click and Control-click on the menu-bar icon open native quick options: Open agenda, Settings, Refresh and Quit.
+- Primary click keeps the existing agenda content in a transient native popover; clicking again closes it.
+- Opening or cancelling quick options executes no command. Refresh remains disabled without existing calendar access and never requests permission from the menu.
+- Accessible status-button label/help and explicit Open agenda / Quick options actions supplement normal keyboard activation and native menu navigation.
+- Synthetic AppKit QA exercises event routing, repeated popover/menu cycles, cancellation and deferred action selection without real calendars or global input injection.
+
+
 ### 0.2.3 development preview (build 15)
 
 - Show the exact version and build from the running app bundle in General settings and the sidebar.

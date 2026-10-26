@@ -96,3 +96,6 @@ If WorkHarbor fits your workflow, give the project a star and help others find i
 ## License
 
 [MIT](LICENSE) · Copyright © 2026 Heitor Ribeiro.
+
+
+Primary click opens the agenda. Secondary click (including a configured trackpad secondary click) or Control-click opens quick options for agenda, settings, refresh and quit. VoiceOver exposes a Quick options action.
