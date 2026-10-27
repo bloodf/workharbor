@@ -12,7 +12,7 @@ jobs:
   package:
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: macos-15
-    timeout-minutes: 30
+    timeout-minutes: 20
     permissions:
       contents: write
     env:
@@ -21,39 +21,39 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
-      - name: Validate release version
+      - name: Validate release version and notes
         shell: bash
         run: |
           [[ "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || exit 1
           VERSION=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' Resources/Info.plist)
           [[ "$RELEASE_TAG" == "v$VERSION" ]] || { echo 'Tag must match Info.plist version'; exit 1; }
+          test -s "docs/releases/$VERSION.md"
       - name: Test
-        run: ./scripts/test.sh
+        run: WORKHARBOR_BUILD_ROOT="$RUNNER_TEMP/workharbor-release" ./scripts/test.sh
       - name: Build
-        run: ./scripts/build-app.sh
-      - name: Install DMG packager
-        run: brew install create-dmg
-      - name: Package customized DMG
-        run: ./scripts/package-dmg.sh
+        run: WORKHARBOR_BUILD_ROOT="$RUNNER_TEMP/workharbor-release" ./scripts/build-app.sh
+      - name: Package and verify app ZIP
+        shell: bash
+        run: |
+          VERSION=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' Resources/Info.plist)
+          ARCH=$(uname -m)
+          [[ "$ARCH" == arm64 ]] || { echo 'Apple Silicon runner required for this release'; exit 1; }
+          mkdir -p release "$RUNNER_TEMP/zip-verification"
+          ASSET="WorkHarbor-$VERSION-macos-$ARCH.zip"
+          cp dist/WorkHarbor.zip "release/$ASSET"
+          ditto -x -k "release/$ASSET" "$RUNNER_TEMP/zip-verification"
+          codesign --verify --deep --strict "$RUNNER_TEMP/zip-verification/WorkHarbor.app"
+          test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$RUNNER_TEMP/zip-verification/WorkHarbor.app/Contents/Info.plist")" = "$VERSION"
+          (cd release && shasum -a 256 "$ASSET" > "$ASSET.sha256")
       - uses: actions/upload-artifact@v4
         with:
-          name: WorkHarbor-DMG
-          path: |
-            dist/*.dmg
-            dist/*.sha256
+          name: WorkHarbor-release-ZIP
+          path: release/*
           if-no-files-found: error
       - name: Publish preview
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
-          cat > "$RUNNER_TEMP/release-notes.md" <<'NOTES'
-          WorkHarbor development preview for macOS 14+.
-
-          Download the DMG matching your Mac architecture and drag WorkHarbor into Applications. Quit any previous version first. The filename identifies the actual build architecture.
-
-          This preview is ad-hoc signed, NOT Developer ID signed or notarized by Apple. macOS may block opening it. No security settings are disabled by the installer. Build from source if you do not wish to use this preview.
-
-          Automated tests do not guarantee compatibility with every calendar provider. Review calendar changes before enabling automatic synchronization. Back up your calendars independently.
-          NOTES
-          gh release create "$RELEASE_TAG" dist/*.dmg dist/*.sha256 --verify-tag --prerelease --title "WorkHarbor $RELEASE_TAG — preview" --notes-file "$RUNNER_TEMP/release-notes.md"
+          VERSION=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' Resources/Info.plist)
+          gh release create "$RELEASE_TAG" release/*.zip release/*.sha256 --verify-tag --prerelease --title "WorkHarbor $VERSION" --notes-file "docs/releases/$VERSION.md"

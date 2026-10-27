@@ -10,9 +10,9 @@ WorkHarbor brings your upcoming events to the macOS menu bar and helps your cale
 
 Built for people whose day does not fit in a single calendar. No new calendar account. No extra calendar passwords. Just the calendars already on your Mac.
 
-**[Get started](#get-started)** · **[How synchronization works](docs/synchronization.md)** · **[Contribute](CONTRIBUTING.md)**
+**[Download](https://github.com/bloodf/workharbor/releases)** · **[Get started](#get-started)** · **[How synchronization works](docs/synchronization.md)** · **[Contribute](CONTRIBUTING.md)**
 
-> **Development preview:** build from source on macOS. Local builds are ad-hoc signed, not notarized; test with disposable calendars before relying on synchronization.
+> **Preview release:** download the app ZIP from [GitHub Releases](https://github.com/bloodf/workharbor/releases). Builds are ad-hoc signed and are not notarized by Apple. Source builds are also available.
 
 ## A calmer way to see your day
 
@@ -22,7 +22,7 @@ Built for people whose day does not fit in a single calendar. No new calendar ac
 
 ### One glance, less switching
 
-Open the menu-bar panel to see upcoming events grouped by day, with calendar colors and an indicator for events happening now. Choose which calendars appear and keep configuration in a separate settings window.
+Open the menu-bar panel to see upcoming events grouped by day, with calendar colors and an indicator for events happening now. Choose which calendars appear and keep configuration in a separate settings window. Secondary click or Control-click opens quick options for the agenda, settings, refresh, and quit. VoiceOver also exposes a Quick options action.
 
 ### Share your availability, not your personal plans
 
@@ -49,6 +49,14 @@ Light and dark appearances. English, Brazilian Portuguese, and Spanish. A native
 For example: keep a personal appointment visible in your own agenda while showing only a Busy block on your work calendar. WorkHarbor creates separate copies, not a two-way calendar merge.
 
 ## Get started
+
+### Download the app
+
+Download the ZIP for your Mac architecture and its matching `.sha256` file from [GitHub Releases](https://github.com/bloodf/workharbor/releases). Version 0.2.4 includes an Apple Silicon (`arm64`) build. Verify the checksum, extract the ZIP, quit any previous WorkHarbor instance, and move the app to Applications if you want to keep it installed.
+
+The preview is ad-hoc signed and is not notarized by Apple. macOS may block opening it. Keep macOS security protections enabled; build from source if you prefer to inspect and compile the app yourself.
+
+### Build from source
 
 You need **macOS 14 or later** and **Xcode or Command Line Tools with Swift 6**. There are no third-party Swift package dependencies.
 
@@ -96,6 +104,3 @@ If WorkHarbor fits your workflow, give the project a star and help others find i
 ## License
 
 [MIT](LICENSE) · Copyright © 2026 Heitor Ribeiro.
-
-
-Primary click opens the agenda. Secondary click (including a configured trackpad secondary click) or Control-click opens quick options for agenda, settings, refresh and quit. VoiceOver exposes a Quick options action.

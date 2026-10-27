@@ -1,10 +1,10 @@
 # Changelog
 
-User-visible changes are recorded here. `Unreleased` describes the current development preview; it is not a claim that a packaged or notarized release has been published. Historical release dates are not reconstructed from development builds.
+User-visible changes are recorded below. Preview releases are ad-hoc signed and are not notarized by Apple.
 
-## [Unreleased]
+## [0.2.4] — 2026-10-27
 
-### 0.2.4 development preview (build 16)
+Build 16 · Preview release
 
 - Secondary mouse/trackpad click and Control-click on the menu-bar icon open native quick options: Open agenda, Settings, Refresh and Quit.
 - Primary click keeps the existing agenda content in a transient native popover; clicking again closes it.
@@ -13,7 +13,9 @@ User-visible changes are recorded here. `Unreleased` describes the current devel
 - Synthetic AppKit QA exercises event routing, repeated popover/menu cycles, cancellation and deferred action selection without real calendars or global input injection.
 
 
-### 0.2.3 development preview (build 15)
+## Earlier development builds
+
+### 0.2.3 (build 15)
 
 - Show the exact version and build from the running app bundle in General settings and the sidebar.
 - Give Inspect copies its own labeled button in each sync rule, with guidance and a shortcut from sync warnings.
@@ -37,7 +39,7 @@ User-visible changes are recorded here. `Unreleased` describes the current devel
 - Unit tests for synchronization, privacy transformations, route consent, copy inventory, cleanup, review validation, identity migration, and write-journal behavior.
 - MIT license, product-focused multilingual READMEs, contribution and support guides, security and conduct policies, and structured issue and pull request templates.
 - Custom drag-to-install DMG packaging with branded artwork, an Applications link, and a checksum.
-- GitHub Actions configuration for tests and app builds, plus tag-triggered DMG prerelease publishing. These definitions do not establish that a workflow has passed or a release has been published.
+- GitHub Actions tests and app builds, with version-tagged ZIP preview releases and SHA-256 checksums.
 
 ### Fixed
 
