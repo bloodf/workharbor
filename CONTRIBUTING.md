@@ -90,3 +90,15 @@ No fixed review or response time is promised. Smaller pull requests with clear e
 ## Contribution license
 
 By submitting a contribution, you agree that it may be distributed under this repository's [MIT License](LICENSE). Submit only material you have the right to contribute, and identify any third-party material and its license. No separate contributor license agreement is required by this guide.
+
+## Privacy
+
+Keep the owner's private setup out of source, tests, fixtures, docs, commits,
+branch names, issues, pull requests and comments. Do not include machine names,
+home or worktree paths, private network details, service ports or hostnames,
+thread and task IDs, personal email or provider accounts, quota or credit data,
+device identifiers, Wi-Fi names, or secrets.
+
+Use RFC 5737 addresses such as `192.0.2.10`, example domains, `printer-1`,
+`<serial>`, and `$HOME/...`. Keep hardware findings and redact the identifying
+details. Run `sh scripts/check-privacy.sh` before submitting changes.
